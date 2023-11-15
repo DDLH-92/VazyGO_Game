@@ -6,11 +6,11 @@ var Engine = Matter.Engine,
   Composite = Matter.Composite;
 
 // colors
-const GAME_BACKGROUND_COLOR = 'assets/nerf.png';
-const BLACK = "#000000";
+const GAME_BACKGROUND_COLOR = "#ffffff";
+const WALL_COLOR = "#000000";
 const WIDTH = 600;
 const HEIGHT = 900;
-const BORDER_WIDTH = 5;
+const BORDER_WIDTH = 10;
 const CIRCLE_RADIUS = 20;
 
 // create an engine
@@ -31,15 +31,15 @@ var render = Render.create({
 // walls
 var ground = Bodies.rectangle(WIDTH/2, HEIGHT, HEIGHT, BORDER_WIDTH, {
   isStatic: true,
-  render: { fillStyle: BLACK },
+  render: { fillStyle: WALL_COLOR },
 });
 var wallLeft = Bodies.rectangle(0, HEIGHT/2, BORDER_WIDTH, HEIGHT, {
   isStatic: true,
-  render: { fillStyle: BLACK },
+  render: { fillStyle: WALL_COLOR },
 });
 var wallRight = Bodies.rectangle(WIDTH, HEIGHT/2, BORDER_WIDTH, HEIGHT, {
   isStatic: true,
-  render: { fillStyle: BLACK },
+  render: { fillStyle: WALL_COLOR },
 });
 
 // add all of the bodies to the world
