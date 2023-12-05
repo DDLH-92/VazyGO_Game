@@ -1,5 +1,5 @@
-const DEFAULT_DENSITY = 0.1;
-const DEFAULT_FRICTION = 1;
+const DEFAULT_DENSITY = 0.001; // default 0.001
+const DEFAULT_FRICTION = 0.1; // default 0.1
 
 let cherry = {
   type: "cherry",

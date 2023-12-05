@@ -34,8 +34,8 @@ var render = Render.create({
   engine: engine,
   options: {
     width: WIDTH,
-    height: HEIGHT,
     wireframes: false,
+    height: HEIGHT,
     background: GAME_BACKGROUND_COLOR,
   },
 });
@@ -78,7 +78,14 @@ function start(){
 }
 render.canvas.addEventListener("mousemove", function (event) {
   let pageX = event.pageX - render.canvas.getBoundingClientRect().left;
-staticFruit.position.x = pageX;});
+  if (pageX < (BORDER_WIDTH / 2) + staticFruit.circleRadius) {
+    staticFruit.position.x = (BORDER_WIDTH / 2) + staticFruit.circleRadius;
+  } else if (pageX > WIDTH - (BORDER_WIDTH / 2) - staticFruit.circleRadius) {
+    staticFruit.position.x = WIDTH - (BORDER_WIDTH / 2) - staticFruit.circleRadius;
+  } else {
+    staticFruit.position.x = pageX;
+  }
+});
 
 // drop the fruit on click
 render.canvas.addEventListener("click", function (event) {
@@ -90,6 +97,7 @@ render.canvas.addEventListener("click", function (event) {
     setNextFruit(pageX);
   }
 });
+
 
 
 function setupFruits() {
@@ -131,7 +139,6 @@ function setupWalls(color, width, height, border_width) {
     isStatic: true,
     render: { fillStyle: color },
   });
-
 }
 
 function getRandomFruit() {
@@ -142,24 +149,99 @@ function setNextFruit(positionX = WIDTH / 2) {
   currentFruit = nextFruit || getRandomFruit();
   nextFruit = getRandomFruit();
 
-  // updateNextFruitView(nextFruit);
 
   setupStaticFruit(positionX);
 }
 
 
-function setupStaticFruit(positionX) {
+function setupStaticFruit(positionX = WIDTH / 2) {
   if (staticFruit) {
     Composite.remove(engine.world, staticFruit);
   }
   staticFruit = currentFruit.body(positionX, STATIC_FRUIT_Y);
-
   staticFruit.isStatic = true;
+  // make staticFruit impossible to touch other fruits
+  staticFruit.collisionFilter = {
+    mask: 0x0000,
+  };
+  // make it invisible for 0.5 second
+  staticFruit.render.opacity = 0.2;
+  setTimeout(function () {
+    staticFruit.render.opacity = 1;
+  }, 500);
 
   Composite.add(engine.world, staticFruit);
+}
+
+function setupNextFruit(positionX) {
+  if (nextFruit) {
+    Composite.remove(engine.world, nextFruit);
+  }
+  nextFruit = getRandomFruit();
+  nextFruit = nextFruit.body(newPositionX, STATIC_FRUIT_Y);
+  nextFruit.isStatic = true;
+  Composite.add(engine.world, nextFruit);
 }
 
 // hide cursor when over canvas
 render.canvas.addEventListener("mouseover", function () {
   render.canvas.style.cursor = "none";
 });
+
+// make a line on the top of the canvas, if fruits cross it, a popup will appear to inform the player that he lost and give the final score and a button to restart the game
+// var line = Bodies.rectangle(WIDTH/2, 200, WIDTH, BORDER_WIDTH, {
+//   isStatic: true,
+//   render: { fillStyle: WALL_COLOR },
+// });
+// Composite.add(engine.world, line);
+
+//when two fruits of the same type collide, they merge into the next type of fruit and the score is updated
+Matter.Events.on(engine, "collisionStart", function (event) {
+  var pairs = event.pairs;
+  for (var i = 0, j = pairs.length; i != j; ++i) {
+    var pair = pairs[i];
+    if (pair.bodyA.plugin && pair.bodyB.plugin) {
+      // check if the body plugin contains a fruit
+      var fruitA = pair.bodyA.plugin.fruit;
+      var fruitB = pair.bodyB.plugin.fruit;
+      if (fruitA && fruitB) {
+        // check if the fruits are the same type
+        if (fruitA.type === fruitB.type) {
+          // remove the fruits from the world
+          Composite.remove(engine.world, pair.bodyA);
+          Composite.remove(engine.world, pair.bodyB);
+          // find the position of the two fruits when they collide
+          var x = (pair.bodyA.position.x + pair.bodyB.position.x) / 2;
+          var y = (pair.bodyA.position.y + pair.bodyB.position.y) / 2;
+          // add the next fruit to the world
+          var nextFruit = fruitA.next(x,y);
+          Composite.add(engine.world, nextFruit);
+          // update the score
+          // score += fruitA.points + fruitB.points;
+          // updateScoreView(score);
+          // update the next fruit
+          setNextFruit();
+        }
+      }
+    }
+  }
+});
+
+//Avoid the fruits to fall out of the canvas
+Matter.Events.on(engine, "afterUpdate", function () {
+  for (var i = 0; i < engine.world.bodies.length; i++) {
+    var body = engine.world.bodies[i];
+    if (body.position.y > HEIGHT + 100) {
+      Composite.remove(engine.world, body);
+    }
+  }
+});
+
+function updateNextFruitView(nextFruit) {
+  var nextFruitView = document.getElementById("nextFruit");
+  nextFruitView.src = nextFruit.src;
+}
+
+function restart() {
+  window.location.reload();
+}
